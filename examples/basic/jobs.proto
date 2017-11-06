@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package jobs;
+
+message DeleteJobInput {
+  string name = 1;
+  string project = 2;
+}
+
+message DeleteJobOutput {
+  string error = 1;
+}
+
+message CreateJobInput {
+  string name = 1;
+  string project = 2;
+}
+
+message CreateJobOutput {
+  string error = 1;
+  string name = 2;
+  string project = 3;
+}
+
+service JobService {
+  rpc DeleteJob(DeleteJobInput) returns (DeleteJobOutput) {}
+  rpc CreateJob(CreateJobInput) returns (CreateJobOutput) {}
+}
