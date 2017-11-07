@@ -21,8 +21,11 @@ function run_test { #generate embedded resources
 	echo "--> building gg generator"
 	go build -o $GOPATH/bin/gg main.go
 
-	echo "--> generating test files"
+	echo "--> generating test examples"
 	gg examples/basic/*.pb.go
+
+	echo "--> run go tests"
+	go test -v ./examples/basic
 }
 
 case $1 in

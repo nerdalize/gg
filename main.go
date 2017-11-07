@@ -174,10 +174,12 @@ func (s *{{$n}}Handler) Handle{{$pn}}(w http.ResponseWriter, r *http.Request) {
 	in := &{{$proc.InputDecl.Name}}{}
 
 	defer r.Body.Close()
-	err := jsonpb.Unmarshal(r.Body, in)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
-		return
+	if r.Body != nil && r.ContentLength != 0 {
+		err := jsonpb.Unmarshal(r.Body, in)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
+			return
+		}
 	}
 
 	out, err := s.svc.{{$pn}}(r.Context(), in)
@@ -232,6 +234,10 @@ func run(logs *log.Logger, args []string) error {
 			return fmt.Errorf("failed to generate: %v", err)
 		}
 
+		if len(services.Services) < 1 {
+			continue //skip generation of files that contain no services
+		}
+
 		nparts := strings.SplitN(filepath.Base(path), ".", 2)
 		nparts[0] = nparts[0] + ".gw"
 		gwfname := strings.Join(nparts, ".")
@@ -243,8 +249,13 @@ func run(logs *log.Logger, args []string) error {
 		//@TODO provide hooks for customizing the grpc response to HTTP response code/message
 		//@TODO provide ways to parse form values instead of body
 		//@TODO provide a way to call gRPC remotes (via client)?
-		//@TODO provide a way to generate docs
+		//@TODO provide a way to generate API docs
 		//@TODO generate handler documentation for niceness in godoc
+		//@TODO test the case in which there are no services in a proto file
+		//@TODO write a test case for GET requests and zero length bodies
+		//@TODO think about how to determine to response type (start with just JSON, or also form?)
+		//@TODO can we encode errors from the service implementation, preferrably allow users to specify
+		//an application specific error message in the proto files
 
 		err = write(logs, gwfpath, services)
 		if err != nil {

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package basic;
+
+message Name {}
+message Greeting {}
+message Goodbye {}
+
+service Greeter {
+  rpc SayHello(Name) returns (Greeting) {}
+  rpc SayBye(Name) returns (Goodbye) {}
+}
