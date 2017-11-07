@@ -115,7 +115,9 @@ func parse(logs *log.Logger, fset *token.FileSet, path string) (svcf *ServiceFil
 		for _, spec := range decl.Specs {
 			if tspec, ok := spec.(*ast.TypeSpec); ok {
 				if itype, ok := tspec.Type.(*ast.InterfaceType); ok {
-					svcf.Services[tspec.Name.Name], err = parseServiceInterface(logs, itype)
+					name := strings.TrimSuffix(tspec.Name.Name, "Server")
+
+					svcf.Services[name], err = parseServiceInterface(logs, itype)
 					if err != nil {
 						err = fmt.Errorf("failed to parse service interface: %v", err)
 						return false
@@ -146,16 +148,16 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 )
 {{range $n, $svc := .Services}}
-//Serve{{$n}} serves a gRPC interface on a http1.1 handler
-type Serve{{$n}} struct {
-	svc {{$n}}
+//{{$n}}Handler serves a gRPC interface on a http1.1 handler
+type {{$n}}Handler struct {
+	svc {{$n}}Server
 	m   *jsonpb.Marshaler
 	dec *schema.Decoder
 }
 
-//NewServe{{$n}} can be used to serve gRPC over http1.1 servers
-func NewServe{{$n}}(svc {{$n}}) *Serve{{$n}} {
-	return &Serve{{$n}}{
+//New{{$n}}Handler can be used to serve gRPC over http1.1 servers
+func New{{$n}}Handler(svc {{$n}}Server) *{{$n}}Handler {
+	return &{{$n}}Handler{
 		svc: svc,
 		m:   &jsonpb.Marshaler{},
 		dec: schema.NewDecoder(),
@@ -163,12 +165,12 @@ func NewServe{{$n}}(svc {{$n}}) *Serve{{$n}} {
 }
 
 //ServeHTTP implements the http.Handler interface
-func (s *Serve{{$n}}) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *{{$n}}Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//@TODO provide (default) routing of URL parts to handlers
 }
 {{range $pn, $proc := $svc.Procedures}}
 //Handle{{$pn}} Is a generated handler that calls a gRPC service procedure
-func (s *Serve{{$n}}) Handle{{$pn}}(w http.ResponseWriter, r *http.Request) {
+func (s *{{$n}}Handler) Handle{{$pn}}(w http.ResponseWriter, r *http.Request) {
 	in := &{{$proc.InputDecl.Name}}{}
 
 	defer r.Body.Close()
@@ -242,6 +244,7 @@ func run(logs *log.Logger, args []string) error {
 		//@TODO provide ways to parse form values instead of body
 		//@TODO provide a way to call gRPC remotes (via client)?
 		//@TODO provide a way to generate docs
+		//@TODO generate handler documentation for niceness in godoc
 
 		err = write(logs, gwfpath, services)
 		if err != nil {
