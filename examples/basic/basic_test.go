@@ -61,7 +61,7 @@ func TestPostJSON(t *testing.T) {
 		if i.Message == "" {
 			i.Message = "empty_input"
 		}
-		return &Output{Message: i.Message, Overwrite: i.Overwrite}, nil
+		return &Output{Message: i.Message, OverwriteMe: i.OverwriteMe}, nil
 	})
 
 	echoHandler := NewEchoHandler(e)
@@ -106,13 +106,13 @@ func TestPostJSON(t *testing.T) {
 	})
 
 	t.Run("dont overwite if body doesn't specifys", func(t *testing.T) {
-		resp, err := svr.Client().Post(svr.URL+"?overwrite=true", "application/json", bytes.NewBufferString(`{"message": "bar"}`))
+		resp, err := svr.Client().Post(svr.URL+"?OverwriteMe=true", "application/json", bytes.NewBufferString(`{"message": "bar"}`))
 		if err != nil {
 			t.Fatalf("failed to get: %v", err)
 		}
 
 		assertResponseMap(t, resp, http.StatusOK, func(tb testing.TB, v map[string]interface{}) {
-			if v["overwrite"] != true {
+			if v["overwriteMe"] != true {
 				tb.Fatalf("expected query input not to be overwritten, got: %#v", v)
 			}
 
@@ -123,13 +123,13 @@ func TestPostJSON(t *testing.T) {
 	})
 
 	t.Run("do overwite if body specifies", func(t *testing.T) {
-		resp, err := svr.Client().Post(svr.URL+"?overwrite=true", "application/json", bytes.NewBufferString(`{"message": "bar", "overwrite": false}`))
+		resp, err := svr.Client().Post(svr.URL+"?overwriteMe=true", "application/json", bytes.NewBufferString(`{"message": "bar", "overwriteMe": false}`))
 		if err != nil {
 			t.Fatalf("failed to get: %v", err)
 		}
 
 		assertResponseMap(t, resp, http.StatusOK, func(tb testing.TB, v map[string]interface{}) {
-			if _, ok := v["overwrite"]; ok {
+			if _, ok := v["overwriteMe"]; ok {
 				tb.Fatalf("expected overwrite to cause empty message field, got: %#v", v)
 			}
 
