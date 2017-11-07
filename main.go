@@ -164,11 +164,6 @@ func New{{$n}}Handler(svc {{$n}}Server) *{{$n}}Handler {
 		FormDecoder: schema.NewDecoder(),
 	}
 }
-
-//ServeHTTP implements the http.Handler interface
-func (s *{{$n}}Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//@TODO provide (default) routing of URL parts to handlers
-}
 {{range $pn, $proc := $svc.Procedures}}
 //Handle{{$pn}} Is a generated handler that calls a gRPC service procedure
 func (s *{{$n}}Handler) Handle{{$pn}}(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +255,6 @@ func run(logs *log.Logger, args []string) error {
 		gwfname := strings.Join(nparts, ".")
 		gwfpath := filepath.Join(filepath.Dir(path), gwfname)
 
-		//@TODO add default routing based on url
 		//@TODO provide hooks before (and after?) body marshalling that allow customizing the mapping of
 		//request (headers) to the protobuf fields
 		//@TODO provide hooks for customizing the grpc response to HTTP response code/message
@@ -268,11 +262,11 @@ func run(logs *log.Logger, args []string) error {
 		//@TODO provide a way to generate API docs
 		//@TODO generate handler documentation for niceness in godoc
 		//@TODO test the case in which there are no services in a proto file
-		//@TODO write a test case for GET requests and zero length bodies
 		//@TODO think about how to determine to response type (start with just JSON, or also form?)
 		//@TODO can we encode errors from the service implementation, preferrably allow users to specify
 		//an application specific error message in the proto files
 		//@TODO add table tests
+		//@TODO test how form decoding handles all kinds of protobuf possibilities (excoting types, nested structs etc)
 
 		err = write(logs, gwfpath, services)
 		if err != nil {
