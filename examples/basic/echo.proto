@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package basic;
 
-message Input { string message = 1; }
+message Input { string message = 1; bool overwrite = 2; }
 
-message Output { string message = 1;}
+message Output { string message = 1; bool overwrite = 2;}
 
 service Echo {
   rpc Repeat(Input) returns (Output) {}

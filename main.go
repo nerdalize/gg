@@ -143,6 +143,7 @@ package {{.Package}}
 import (
 	"fmt"
 	"net/http"
+	"mime"
 
 	"github.com/gorilla/schema"
 	"github.com/golang/protobuf/jsonpb"
@@ -150,17 +151,17 @@ import (
 {{range $n, $svc := .Services}}
 //{{$n}}Handler serves a gRPC interface on a http1.1 handler
 type {{$n}}Handler struct {
-	svc {{$n}}Server
-	m   *jsonpb.Marshaler
-	dec *schema.Decoder
+	svc 				{{$n}}Server
+	m   				*jsonpb.Marshaler
+	FormDecoder *schema.Decoder
 }
 
 //New{{$n}}Handler can be used to serve gRPC over http1.1 servers
 func New{{$n}}Handler(svc {{$n}}Server) *{{$n}}Handler {
 	return &{{$n}}Handler{
-		svc: svc,
-		m:   &jsonpb.Marshaler{},
-		dec: schema.NewDecoder(),
+		svc: 				 svc,
+		m:   				 &jsonpb.Marshaler{},
+		FormDecoder: schema.NewDecoder(),
 	}
 }
 
@@ -173,9 +174,25 @@ func (s *{{$n}}Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *{{$n}}Handler) Handle{{$pn}}(w http.ResponseWriter, r *http.Request) {
 	in := &{{$proc.InputDecl.Name}}{}
 
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to parse URL query or form body: %s", err), http.StatusBadRequest)
+		return
+	}
+
+	if len(r.Form) > 0 {
+		err = s.FormDecoder.Decode(in, r.Form)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to parse form schema: %s", err), http.StatusBadRequest)
+			return
+		}
+	}
+
+	mt, _, _ := mime.ParseMediaType(r.Header.Get("content-type"))
+
 	defer r.Body.Close()
-	if r.Body != nil && r.ContentLength != 0 {
-		err := jsonpb.Unmarshal(r.Body, in)
+	if r.Body != nil && r.ContentLength != 0  && mt == "application/json" {
+		err = jsonpb.Unmarshal(r.Body, in)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
 			return
@@ -245,9 +262,8 @@ func run(logs *log.Logger, args []string) error {
 
 		//@TODO add default routing based on url
 		//@TODO provide hooks before (and after?) body marshalling that allow customizing the mapping of
-		//requests to the protobuf input
+		//request (headers) to the protobuf fields
 		//@TODO provide hooks for customizing the grpc response to HTTP response code/message
-		//@TODO provide ways to parse form values instead of body
 		//@TODO provide a way to call gRPC remotes (via client)?
 		//@TODO provide a way to generate API docs
 		//@TODO generate handler documentation for niceness in godoc
@@ -256,6 +272,7 @@ func run(logs *log.Logger, args []string) error {
 		//@TODO think about how to determine to response type (start with just JSON, or also form?)
 		//@TODO can we encode errors from the service implementation, preferrably allow users to specify
 		//an application specific error message in the proto files
+		//@TODO add table tests
 
 		err = write(logs, gwfpath, services)
 		if err != nil {
