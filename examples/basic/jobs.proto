@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package jobs;
+package examples;
 
 message DeleteJobInput {
   string name = 1;
