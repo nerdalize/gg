@@ -208,6 +208,7 @@ func (r *{{$n}}Caller) Call{{$pn}}(ctx context.Context, m, p string, i *{{$proc.
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -332,6 +333,7 @@ func run(logs *log.Logger, args []string) error {
 		//@TODO generate a client that takes into account response content type?
 		//@TODO figure out if we can always assume we can we always assume we have a body with json? empty bodies?
 		//@TODO find out if we assert mandatory endpoint elemements upon caller constructing
+		//@TODO find a way to customize the headers of the requests of the client
 
 		err = write(logs, gwfpath, services)
 		if err != nil {
