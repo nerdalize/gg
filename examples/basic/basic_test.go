@@ -186,3 +186,29 @@ func TestPostForm(t *testing.T) {
 		}
 	})
 }
+
+func TestBasicClient(t *testing.T) {
+	var e EchoServer
+	e = echo(func(ctx context.Context, i *Input) (*Output, error) {
+		return &Output{Message: i.Message}, nil
+	})
+
+	echoHandler := NewEchoHandler(e)
+	svr := httptest.NewServer(http.HandlerFunc(echoHandler.HandleRepeat))
+	defer svr.Close()
+
+	caller, err := NewEchoCaller(http.DefaultClient, svr.URL)
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	input := &Input{Message: "abc"}
+	output, err := caller.CallRepeat(context.Background(), http.MethodPost, "/", input)
+	if err != nil {
+		t.Fatalf("failed to call server: %v", err)
+	}
+
+	if output.Message != input.Message {
+		t.Fatalf("output message should be equal to input message, in: %#v, out: %#v", input, output)
+	}
+}
